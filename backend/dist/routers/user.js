@@ -19,10 +19,12 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const __1 = require("..");
 const middleware_1 = require("../middleware");
 const s3_presigned_post_1 = require("@aws-sdk/s3-presigned-post");
+const types_1 = require("../types");
 const prismaClient = new client_1.PrismaClient();
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 const region = process.env.AWS_REGION;
+const DEFAULT_TITLE = "Select the most suitable thumbnail";
 const s3Client = new client_s3_1.S3Client({
     credentials: {
         accessKeyId,
@@ -67,6 +69,106 @@ router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function*
         });
         const token = jsonwebtoken_1.default.sign({ userId: user.id }, __1.JWT_SECRET);
         res.json({ token });
+    }
+}));
+router.get("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // @ts-ignore
+        const taskId = req.query.taskId;
+        // @ts-ignore
+        const userId = req.userId;
+        const taskDetails = yield prismaClient.task.findFirst({
+            where: {
+                user_id: Number(userId),
+                id: Number(taskId),
+            },
+            include: {
+                options: true,
+            },
+        });
+        if (!taskDetails) {
+            res.status(411).json({
+                message: "You don't have access to this task",
+            });
+            return;
+        }
+        // Fetch all responses related to the task.
+        const responses = yield prismaClient.submission.findMany({
+            where: {
+                task_id: Number(taskId),
+            },
+            include: {
+                options: true,
+            },
+        });
+        const result = {};
+        // Initialize count for each option in task details.
+        taskDetails.options.forEach((option) => {
+            result[option.id] = {
+                count: 0,
+                option: {
+                    imageUrl: option.image_url,
+                },
+            };
+        });
+        // Increment count for each response's option.
+        responses.forEach((r) => {
+            if (result[r.options_id]) {
+                result[r.options_id].count++;
+            }
+        });
+        // Send final response.
+        res.json({
+            result,
+            taskDetails,
+        });
+        return;
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Internal Server Error",
+        });
+        return;
+    }
+}));
+router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // @ts-ignore
+        const userId = req.userId;
+        // Validate input data from the user.
+        const body = req.body;
+        const parseData = types_1.createTaskInput.safeParse(body);
+        if (!parseData.success) {
+            res.status(411).json({ message: "You have sent the wrong input." });
+            return; // Explicit return to ensure function exits after response
+        }
+        // Execute transaction for task creation and options.
+        const response = yield prismaClient.$transaction((tx) => __awaiter(void 0, void 0, void 0, function* () {
+            var _a;
+            const task = yield tx.task.create({
+                data: {
+                    title: (_a = parseData.data.title) !== null && _a !== void 0 ? _a : DEFAULT_TITLE,
+                    amount: "1",
+                    signature: parseData.data.signature,
+                    user_id: userId,
+                },
+            });
+            yield tx.options.createMany({
+                data: parseData.data.options.map((x) => ({
+                    image_url: x.imageUrl,
+                    task_id: task.id,
+                })),
+            });
+            return task;
+        }));
+        res.json({ id: response.id });
+        return; // Explicit return to ensure function exits after response
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal Server Error" });
+        return; // Explicit return to ensure function exits after response
     }
 }));
 exports.default = router;

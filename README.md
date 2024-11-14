@@ -18,9 +18,11 @@ This project is a Web3 SaaS platform designed for crowdsourced data labeling, ta
 2. [Features](#features)
 3. [Installation](#installation)
 4. [Usage](#usage)
-5. [Components](#components)
-6. [Security Considerations](#security-considerations)
-7. [License](#license)
+5. [Commands](#commands)
+6. [Dependencies](#dependencies)
+7. [Components](#components)
+8. [Security Considerations](#security-considerations)
+9. [License](#license)
 
 ## Project Overview
 This Web3 data labeling platform is designed for Web3 companies to streamline data annotation tasks, incentivizing contributors through crypto payments. It uses Solana to handle transactions, secure authentication, and AWS S3 with CDN for data distribution.
@@ -42,7 +44,15 @@ This Web3 data labeling platform is designed for Web3 companies to streamline da
     ```bash
     npm start
     ```
-2. Access the platform at `http://localhost:3000` and follow the UI for task management, crypto payments, and data labeling.
+2. Access the platform at `http://localhost:3000` and follow the UI for task management, crypto payments, and data 
+labeling.
+
+## Commands
+1. `npx prisma migrate dev --name any_name`
+2. `npx prisma generate`
+
+## Dependencies
+1. **Zod**: For Data validation from users.
 
 ## Components
 1. **Backend**: Transaction handling, payment verification, and secure storage with S3.
