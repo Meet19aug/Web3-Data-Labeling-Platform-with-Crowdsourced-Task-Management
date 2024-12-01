@@ -3,11 +3,12 @@ import { Router } from "express";
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "..";
+
 import { authMiddleware } from "../middleware";
 import { createPresignedPost } from "@aws-sdk/s3-presigned-post";
 import { createTaskInput } from "../types";
 import { parse } from "dotenv";
+import { JWT_SECRET, TOTAL_DECIMALS } from "../config";
 
 const prismaClient = new PrismaClient();
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID!;
@@ -24,7 +25,6 @@ const s3Client = new S3Client({
 });
 
 const router = Router();
-
 
 
 router.get("/presignedUrl", authMiddleware, async (req, res) => {
@@ -141,8 +141,6 @@ router.get("/task", authMiddleware, async (req, res): Promise<void> => {
     }
 });
 
-
-
 router.post("/task", authMiddleware, async (req, res): Promise<void> => {
     try {
         // @ts-ignore
@@ -162,7 +160,7 @@ router.post("/task", authMiddleware, async (req, res): Promise<void> => {
             const task = await tx.task.create({
                 data: {
                     title: parseData.data.title ?? DEFAULT_TITLE,
-                    amount: "1",
+                    amount: 1*TOTAL_DECIMALS,
                     signature: parseData.data.signature,
                     user_id: userId,
                 },
@@ -186,6 +184,7 @@ router.post("/task", authMiddleware, async (req, res): Promise<void> => {
         return; // Explicit return to ensure function exits after response
     }
 });
+
 
 
 export default router;

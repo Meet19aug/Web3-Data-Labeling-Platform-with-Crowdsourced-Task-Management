@@ -16,10 +16,10 @@ const client_1 = require("@prisma/client");
 const express_1 = require("express");
 const client_s3_1 = require("@aws-sdk/client-s3");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const __1 = require("..");
 const middleware_1 = require("../middleware");
 const s3_presigned_post_1 = require("@aws-sdk/s3-presigned-post");
 const types_1 = require("../types");
+const config_1 = require("../config");
 const prismaClient = new client_1.PrismaClient();
 const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
 const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
@@ -58,7 +58,7 @@ router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function*
         },
     });
     if (existingUser) {
-        const token = jsonwebtoken_1.default.sign({ userId: existingUser.id }, __1.JWT_SECRET);
+        const token = jsonwebtoken_1.default.sign({ userId: existingUser.id }, config_1.JWT_SECRET);
         res.json({ token });
     }
     else {
@@ -67,7 +67,7 @@ router.post("/signin", (req, res) => __awaiter(void 0, void 0, void 0, function*
                 address: hardcodedWalletAddress,
             },
         });
-        const token = jsonwebtoken_1.default.sign({ userId: user.id }, __1.JWT_SECRET);
+        const token = jsonwebtoken_1.default.sign({ userId: user.id }, config_1.JWT_SECRET);
         res.json({ token });
     }
 }));
@@ -149,7 +149,7 @@ router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0
             const task = yield tx.task.create({
                 data: {
                     title: (_a = parseData.data.title) !== null && _a !== void 0 ? _a : DEFAULT_TITLE,
-                    amount: "1",
+                    amount: 1 * config_1.TOTAL_DECIMALS,
                     signature: parseData.data.signature,
                     user_id: userId,
                 },
